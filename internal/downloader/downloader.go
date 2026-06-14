@@ -136,7 +136,7 @@ func (d *Downloader) Download(ctx context.Context, req Request) (result Result, 
 	completed = true
 
 	if req.MediaType == MediaAudio {
-		if err := d.audioConverter.Convert(ctx, downloadPath, path); err != nil {
+		if err := d.audioConverter.Convert(ctx, downloadPath, path, req.Metadata); err != nil {
 			_ = os.Remove(path)
 			return Result{}, fmt.Errorf("converter áudio para MP3: %w", err)
 		}

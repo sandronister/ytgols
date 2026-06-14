@@ -8,4 +8,15 @@ type Answers struct {
 	OutputDir string
 	Filename  string
 	Itag      int
+	Metadata  ID3Metadata
+}
+
+// ID3Metadata contains optional metadata for audio downloads.
+type ID3Metadata struct {
+	Title  string
+	Artist string
+	Album  string
+	Year   string
+	Genre  string
+	Track  string
 }

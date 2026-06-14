@@ -16,6 +16,16 @@ const (
 	QualityWorst Quality = "worst"
 )
 
+// ID3Metadata contains optional ID3v2.4 fields for an MP3 file.
+type ID3Metadata struct {
+	Title  string
+	Artist string
+	Album  string
+	Year   string
+	Genre  string
+	Track  string
+}
+
 // Request describes one download.
 type Request struct {
 	URL       string
@@ -24,6 +34,7 @@ type Request struct {
 	MediaType MediaType
 	Quality   Quality
 	Itag      int
+	Metadata  ID3Metadata
 	Progress  func(downloaded, total int64)
 }
 

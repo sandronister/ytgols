@@ -46,7 +46,12 @@ func TestAskWithValuesAndValidation(t *testing.T) {
 		"minha musica",
 		"-1",
 		"140",
-		"",
+		"Minha música",
+		"Minha artista",
+		"Meu álbum",
+		"2026",
+		"MPB",
+		"3",
 	}, "\n"))
 	var output bytes.Buffer
 
@@ -64,7 +69,32 @@ func TestAskWithValuesAndValidation(t *testing.T) {
 	if got.Itag != 140 {
 		t.Fatalf("Itag = %d", got.Itag)
 	}
+	if got.Metadata.Title != "Minha música" || got.Metadata.Artist != "Minha artista" {
+		t.Fatalf("Metadata title/artist = %q/%q", got.Metadata.Title, got.Metadata.Artist)
+	}
+	if got.Metadata.Album != "Meu álbum" || got.Metadata.Year != "2026" {
+		t.Fatalf("Metadata album/year = %q/%q", got.Metadata.Album, got.Metadata.Year)
+	}
+	if got.Metadata.Genre != "MPB" || got.Metadata.Track != "3" {
+		t.Fatalf("Metadata genre/track = %q/%q", got.Metadata.Genre, got.Metadata.Track)
+	}
 	if !strings.Contains(output.String(), "Valor inválido") {
 		t.Error("expected validation message")
+	}
+	if !strings.Contains(output.String(), "Metadados ID3v2.4") {
+		t.Error("expected ID3v2.4 fields")
+	}
+}
+
+func TestAskDoesNotRequestID3MetadataForVideo(t *testing.T) {
+	input := strings.NewReader("https://youtu.be/example\n\n\n\n\n\n")
+	var output bytes.Buffer
+
+	if _, err := New(input, &output).Ask(); err != nil {
+		t.Fatalf("Ask() error = %v", err)
+	}
+
+	if strings.Contains(output.String(), "Metadados ID3v2.4") {
+		t.Error("video form should not request ID3 metadata")
 	}
 }
