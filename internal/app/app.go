@@ -33,36 +33,50 @@ func New(form Form, downloader Downloader, progress io.Writer) *App {
 
 // Run collects the settings, downloads the media and returns its result.
 func (a *App) Run(ctx context.Context) (downloader.Result, error) {
-	answers, err := a.form.Ask()
-	if err != nil {
-		return downloader.Result{}, fmt.Errorf("ler informações: %w", err)
+	var lastResult downloader.Result
+	for {
+		answers, err := a.form.Ask()
+		if err != nil {
+			return downloader.Result{}, fmt.Errorf("ler informações: %w", err)
+		}
+
+		workingDirectory, err := a.workingDirectory()
+		if err != nil {
+			return downloader.Result{}, fmt.Errorf("identificar diretório de execução: %w", err)
+		}
+		outputDirectory, err := downloadDirectory(answers.OutputDir, workingDirectory)
+		if err != nil {
+			return downloader.Result{}, err
+		}
+
+		reporter := newProgressReporter(a.progress)
+		result, err := a.downloader.Download(ctx, downloader.Request{
+			URL:       answers.URL,
+			OutputDir: outputDirectory,
+			Filename:  answers.Filename,
+			MediaType: downloader.MediaType(answers.MediaType),
+			Quality:   downloader.Quality(answers.Quality),
+			Itag:      answers.Itag,
+			Progress:  reporter.Report,
+		})
+		if err != nil {
+			return downloader.Result{}, err
+		}
+
+		reporter.Clear()
+		fmt.Fprintf(a.progress, "\nDownload concluído: %s\n", result.Path)
+		lastResult = result
+
+		again, err := a.form.AskAgain()
+		if err != nil {
+			return downloader.Result{}, fmt.Errorf("perguntar continuação: %w", err)
+		}
+		if !again {
+			break
+		}
 	}
 
-	workingDirectory, err := a.workingDirectory()
-	if err != nil {
-		return downloader.Result{}, fmt.Errorf("identificar diretório de execução: %w", err)
-	}
-	outputDirectory, err := downloadDirectory(answers.OutputDir, workingDirectory)
-	if err != nil {
-		return downloader.Result{}, err
-	}
-
-	reporter := newProgressReporter(a.progress)
-	result, err := a.downloader.Download(ctx, downloader.Request{
-		URL:       answers.URL,
-		OutputDir: outputDirectory,
-		Filename:  answers.Filename,
-		MediaType: downloader.MediaType(answers.MediaType),
-		Quality:   downloader.Quality(answers.Quality),
-		Itag:      answers.Itag,
-		Progress:  reporter.Report,
-	})
-	if err != nil {
-		return downloader.Result{}, err
-	}
-
-	reporter.Clear()
-	return result, nil
+	return lastResult, nil
 }
 
 func downloadDirectory(directory, workingDirectory string) (string, error) {

@@ -18,11 +18,9 @@ func main() {
 		downloader.New(converter.NewFFmpeg()),
 		os.Stderr,
 	)
-	result, err := application.Run(context.Background())
+	_, err := application.Run(context.Background())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\nerro: %v\n", err)
 		os.Exit(1)
 	}
-
-	fmt.Printf("Download concluído: %s\n", result.Path)
 }

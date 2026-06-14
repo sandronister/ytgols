@@ -67,6 +67,14 @@ func (f *Form) Ask() (Answers, error) {
 	}, nil
 }
 
+func (f *Form) AskAgain() (bool, error) {
+	answer, err := f.choice("Deseja fazer outro download", "n", "s", "n")
+	if err != nil {
+		return false, err
+	}
+	return answer == "s", nil
+}
+
 func (f *Form) text(label, defaultValue string) (string, error) {
 	if defaultValue == "" {
 		fmt.Fprintf(f.output, "%s: ", label)
