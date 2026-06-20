@@ -14,12 +14,36 @@ import (
 )
 
 type formStub struct {
-	answers form.Answers
-	err     error
+	answers        []form.Answers
+	err            error
+	againResponses []bool
+	againErr       error
+	askCalls       int
+	againCalls     int
 }
 
-func (s formStub) Ask() (form.Answers, error) {
-	return s.answers, s.err
+func (s *formStub) Ask() (form.Answers, error) {
+	if s.err != nil {
+		return form.Answers{}, s.err
+	}
+	if s.askCalls >= len(s.answers) {
+		return form.Answers{}, nil
+	}
+	answer := s.answers[s.askCalls]
+	s.askCalls++
+	return answer, nil
+}
+
+func (s *formStub) AskAgain() (bool, error) {
+	if s.againErr != nil {
+		return false, s.againErr
+	}
+	if s.againCalls >= len(s.againResponses) {
+		return false, nil
+	}
+	response := s.againResponses[s.againCalls]
+	s.againCalls++
+	return response, nil
 }
 
 type downloaderStub struct {
@@ -43,15 +67,16 @@ func TestRun(t *testing.T) {
 		result: media.Result{Path: "/tmp/video.mp4"},
 	}
 	var progress bytes.Buffer
-	application := New(formStub{
-		answers: form.Answers{
+	application := New(&formStub{
+		answers: []form.Answers{{
 			URL:       "https://youtu.be/example",
 			MediaType: "audio",
 			Quality:   "worst",
 			OutputDir: "downloads",
 			Filename:  "example",
 			Itag:      140,
-		},
+		}},
+		againResponses: []bool{false},
 	}, downloadService, &progress)
 	workingDirectory := t.TempDir()
 	application.workingDirectory = func() (string, error) {
@@ -156,7 +181,7 @@ func TestDownloadDirectoryRejectsFile(t *testing.T) {
 
 func TestRunFormError(t *testing.T) {
 	application := New(
-		formStub{err: errors.New("input closed")},
+		&formStub{err: errors.New("input closed")},
 		&downloaderStub{},
 		nil,
 	)

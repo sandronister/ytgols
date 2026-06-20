@@ -10,6 +10,7 @@ import (
 // Form collects the download settings.
 type Form interface {
 	Ask() (form.Answers, error)
+	AskAgain() (bool, error)
 }
 
 // Downloader downloads media based on a request.
