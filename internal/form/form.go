@@ -57,6 +57,14 @@ func (f *Form) Ask() (Answers, error) {
 		return Answers{}, err
 	}
 
+	var metadata ID3Metadata
+	if mediaType == "audio" {
+		metadata, err = f.id3Metadata()
+		if err != nil {
+			return Answers{}, err
+		}
+	}
+
 	return Answers{
 		URL:       url,
 		MediaType: mediaType,
@@ -64,6 +72,31 @@ func (f *Form) Ask() (Answers, error) {
 		OutputDir: outputDir,
 		Filename:  filename,
 		Itag:      itag,
+		Metadata:  metadata,
+	}, nil
+}
+
+func (f *Form) id3Metadata() (ID3Metadata, error) {
+	fmt.Fprintln(f.output)
+	fmt.Fprintln(f.output, "Metadados ID3v2.4 (opcionais)")
+
+	labels := []string{"Título", "Artista", "Álbum", "Ano", "Gênero", "Número da faixa"}
+	values := make([]string, len(labels))
+	for i, label := range labels {
+		value, err := f.text(label, "")
+		if err != nil {
+			return ID3Metadata{}, err
+		}
+		values[i] = value
+	}
+
+	return ID3Metadata{
+		Title:  values[0],
+		Artist: values[1],
+		Album:  values[2],
+		Year:   values[3],
+		Genre:  values[4],
+		Track:  values[5],
 	}, nil
 }
 
