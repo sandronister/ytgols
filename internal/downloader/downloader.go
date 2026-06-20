@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -58,17 +59,6 @@ func (d *Downloader) Download(ctx context.Context, req Request) (result Result, 
 		return Result{}, err
 	}
 
-	stream, size, err := d.client.GetStreamContext(ctx, video, &format)
-	if err != nil {
-		return Result{}, fmt.Errorf("open media stream: %w", err)
-	}
-	defer func() {
-		closeErr := stream.Close()
-		if err == nil && closeErr != nil {
-			err = fmt.Errorf("close media stream: %w", closeErr)
-		}
-	}()
-
 	outputDir, err := filepath.Abs(req.OutputDir)
 	if err != nil {
 		return Result{}, fmt.Errorf("resolve output directory: %w", err)
@@ -115,18 +105,9 @@ func (d *Downloader) Download(ctx context.Context, req Request) (result Result, 
 		}
 	}()
 
-	writer := io.Writer(file)
-	if req.Progress != nil {
-		writer = &progressWriter{
-			writer: writer,
-			total:  size,
-			report: req.Progress,
-		}
-	}
-
-	written, err := io.Copy(writer, stream)
+	written, err := d.downloadFormat(ctx, video, format, file, req.Progress)
 	if err != nil {
-		return Result{}, fmt.Errorf("download media: %w", err)
+		return Result{}, err
 	}
 	closeErr := file.Close()
 	fileClosed = true
@@ -154,6 +135,79 @@ func (d *Downloader) Download(ctx context.Context, req Request) (result Result, 
 		Format: newFormat(format),
 		Bytes:  written,
 	}, nil
+}
+
+func (d *Downloader) downloadFormat(
+	ctx context.Context,
+	video *youtube.Video,
+	format youtube.Format,
+	file *os.File,
+	progress func(downloaded, total int64),
+) (int64, error) {
+	written, err := d.copyFormat(ctx, video, format, file, progress)
+	if err == nil {
+		return written, nil
+	}
+	if !isUnexpectedStatus(err, http.StatusForbidden) {
+		return 0, err
+	}
+
+	if _, seekErr := file.Seek(0, io.SeekStart); seekErr != nil {
+		return 0, fmt.Errorf("prepare download retry: %w", seekErr)
+	}
+	if truncateErr := file.Truncate(0); truncateErr != nil {
+		return 0, fmt.Errorf("prepare download retry: %w", truncateErr)
+	}
+
+	fallbackFormat := format
+	fallbackFormat.ContentLength = 0
+	written, retryErr := d.copyFormat(ctx, video, fallbackFormat, file, progress)
+	if retryErr == nil {
+		return written, nil
+	}
+
+	return 0, fmt.Errorf(
+		"download media: YouTube returned HTTP 403 for this stream and the non-chunked retry also failed: %w. Try another itag/quality or update the downloader library if YouTube changed its stream rules",
+		retryErr,
+	)
+}
+
+func (d *Downloader) copyFormat(
+	ctx context.Context,
+	video *youtube.Video,
+	format youtube.Format,
+	file *os.File,
+	progress func(downloaded, total int64),
+) (written int64, err error) {
+	stream, size, err := d.client.GetStreamContext(ctx, video, &format)
+	if err != nil {
+		return 0, fmt.Errorf("open media stream: %w", err)
+	}
+
+	writer := io.Writer(file)
+	if progress != nil {
+		writer = &progressWriter{
+			writer: writer,
+			total:  size,
+			report: progress,
+		}
+	}
+
+	written, err = io.Copy(writer, stream)
+	closeErr := stream.Close()
+	if err != nil {
+		return written, fmt.Errorf("download media: %w", err)
+	}
+	if closeErr != nil {
+		return written, fmt.Errorf("close media stream: %w", closeErr)
+	}
+
+	return written, nil
+}
+
+func isUnexpectedStatus(err error, status int) bool {
+	var statusErr youtube.ErrUnexpectedStatusCode
+	return errors.As(err, &statusErr) && int(statusErr) == status
 }
 
 func outputFilename(req Request, title, mimeType string) string {

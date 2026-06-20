@@ -92,6 +92,7 @@ func TestRun(t *testing.T) {
 func TestDownloadDirectory(t *testing.T) {
 	workingDirectory := t.TempDir()
 	existingDirectory := filepath.Join(workingDirectory, "downloads")
+	absoluteDirectory := filepath.Join(filepath.VolumeName(workingDirectory)+string(filepath.Separator), "tmp", "downloads")
 	if err := os.Mkdir(existingDirectory, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -116,9 +117,9 @@ func TestDownloadDirectory(t *testing.T) {
 		},
 		{
 			name:      "absolute directory",
-			directory: filepath.Join(string(filepath.Separator), "tmp", "downloads"),
+			directory: absoluteDirectory,
 			working:   workingDirectory,
-			want:      filepath.Join(string(filepath.Separator), "tmp", "downloads"),
+			want:      absoluteDirectory,
 		},
 		{
 			name:      "execution at filesystem root",
