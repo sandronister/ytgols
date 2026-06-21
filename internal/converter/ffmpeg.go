@@ -29,7 +29,7 @@ func (f *FFmpeg) Convert(ctx context.Context, inputPath, outputPath string, meta
 		"-vn",
 		"-codec:a", "libmp3lame",
 		"-q:a", "2",
-		"-id3v2_version", "4",
+		"-id3v2_version", "3",
 	}
 	args = appendMetadata(args, metadata)
 	args = append(args, outputPath)

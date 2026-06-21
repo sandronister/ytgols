@@ -1,4 +1,3 @@
-// Package downloader implements YouTube media downloads for the application.
 package downloader
 
 import (
@@ -136,7 +135,8 @@ func (d *Downloader) Download(ctx context.Context, req Request) (result Result, 
 	completed = true
 
 	if req.MediaType == MediaAudio {
-		if err := d.audioConverter.Convert(ctx, downloadPath, path, req.Metadata); err != nil {
+		metadata := metadataFromVideo(req.Metadata, video)
+		if err := d.audioConverter.Convert(ctx, downloadPath, path, metadata); err != nil {
 			_ = os.Remove(path)
 			return Result{}, fmt.Errorf("converter áudio para MP3: %w", err)
 		}
@@ -169,6 +169,43 @@ func outputFilename(req Request, title, mimeType string) string {
 		filename += extensionFor(mimeType)
 	}
 	return filename
+}
+
+func metadataFromVideo(metadata ID3Metadata, video *youtube.Video) ID3Metadata {
+	title := strings.TrimSpace(video.Title)
+	artist := cleanYouTubeAuthor(video.Author)
+	if titleArtist, titleSong, ok := splitTitleArtist(title); ok {
+		if artist == "" {
+			artist = titleArtist
+		}
+		title = titleSong
+	}
+
+	if metadata.Title == "" {
+		metadata.Title = title
+	}
+	if metadata.Artist == "" {
+		metadata.Artist = artist
+	}
+	return metadata
+}
+
+func cleanYouTubeAuthor(author string) string {
+	author = strings.TrimSpace(author)
+	return strings.TrimSuffix(author, " - Topic")
+}
+
+func splitTitleArtist(title string) (artist, song string, ok bool) {
+	parts := strings.SplitN(title, " - ", 2)
+	if len(parts) != 2 {
+		return "", "", false
+	}
+	artist = strings.TrimSpace(parts[0])
+	song = strings.TrimSpace(parts[1])
+	if artist == "" || song == "" {
+		return "", "", false
+	}
+	return artist, song, true
 }
 
 func normalizeRequest(req Request) (Request, error) {

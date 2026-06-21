@@ -46,7 +46,7 @@ func TestConvert(t *testing.T) {
 		"-vn",
 		"-codec:a", "libmp3lame",
 		"-q:a", "2",
-		"-id3v2_version", "4",
+		"-id3v2_version", "3",
 		"-metadata", "title=Song",
 		"-metadata", "artist=Artist",
 		"-metadata", "album=Album",
@@ -101,7 +101,7 @@ func TestConvertOmitsEmptyMetadata(t *testing.T) {
 		"-vn",
 		"-codec:a", "libmp3lame",
 		"-q:a", "2",
-		"-id3v2_version", "4",
+		"-id3v2_version", "3",
 		"-metadata", "artist=Artist",
 		"output.mp3",
 	}

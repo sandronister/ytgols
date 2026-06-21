@@ -23,15 +23,14 @@ O programa solicitará:
 - qualidade;
 - diretório de destino;
 - nome do arquivo;
-- `itag` opcional;
-- metadados ID3v2.4 opcionais para áudio: título, artista, álbum, ano,
-  gênero e número da faixa.
+- `itag` opcional.
 
 Se o diretório relativo já existir no local de execução, ele será usado. Caso
 não exista e o local tenha um diretório pai, o destino será criado um nível
 acima. Na raiz do sistema, o destino será criado no próprio local.
 
 O modo de áudio converte o fluxo baixado para MP3. Para isso, o executável
-`ffmpeg` precisa estar instalado e disponível no `PATH`. Pressione Enter para
-aceitar os valores exibidos entre colchetes ou deixar metadados opcionais em
-branco.
+`ffmpeg` precisa estar instalado e disponível no `PATH`. Os metadados ID3v2.3
+de título e artista são preenchidos automaticamente com as informações obtidas
+online do vídeo. Pressione Enter para aceitar os valores exibidos entre
+colchetes.

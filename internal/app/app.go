@@ -57,15 +57,7 @@ func (a *App) Run(ctx context.Context) (downloader.Result, error) {
 			MediaType: downloader.MediaType(answers.MediaType),
 			Quality:   downloader.Quality(answers.Quality),
 			Itag:      answers.Itag,
-			Metadata: downloader.ID3Metadata{
-				Title:  answers.Metadata.Title,
-				Artist: answers.Metadata.Artist,
-				Album:  answers.Metadata.Album,
-				Year:   answers.Metadata.Year,
-				Genre:  answers.Metadata.Genre,
-				Track:  answers.Metadata.Track,
-			},
-			Progress: reporter.Report,
+			Progress:  reporter.Report,
 		})
 		if err != nil {
 			return downloader.Result{}, err

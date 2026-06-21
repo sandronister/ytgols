@@ -75,14 +75,6 @@ func TestRun(t *testing.T) {
 			OutputDir: "downloads",
 			Filename:  "example",
 			Itag:      140,
-			Metadata: form.ID3Metadata{
-				Title:  "Example",
-				Artist: "Artist",
-				Album:  "Album",
-				Year:   "2026",
-				Genre:  "Rock",
-				Track:  "2",
-			},
 		}},
 		againResponses: []bool{false},
 	}, downloadService, &progress)
@@ -114,14 +106,6 @@ func TestRun(t *testing.T) {
 	if downloadService.request.Itag != 140 {
 		t.Errorf("request.Itag = %d", downloadService.request.Itag)
 	}
-	if downloadService.request.Metadata.Title != "Example" ||
-		downloadService.request.Metadata.Artist != "Artist" ||
-		downloadService.request.Metadata.Album != "Album" ||
-		downloadService.request.Metadata.Year != "2026" ||
-		downloadService.request.Metadata.Genre != "Rock" ||
-		downloadService.request.Metadata.Track != "2" {
-		t.Errorf("request.Metadata = %#v", downloadService.request.Metadata)
-	}
 	if count := strings.Count(progress.String(), "50%"); count != 1 {
 		t.Errorf("50%% printed %d times", count)
 	}
@@ -133,6 +117,7 @@ func TestRun(t *testing.T) {
 func TestDownloadDirectory(t *testing.T) {
 	workingDirectory := t.TempDir()
 	existingDirectory := filepath.Join(workingDirectory, "downloads")
+	absoluteDirectory := filepath.Join(workingDirectory, "absolute-downloads")
 	if err := os.Mkdir(existingDirectory, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -157,9 +142,9 @@ func TestDownloadDirectory(t *testing.T) {
 		},
 		{
 			name:      "absolute directory",
-			directory: filepath.Join(string(filepath.Separator), "tmp", "downloads"),
+			directory: absoluteDirectory,
 			working:   workingDirectory,
-			want:      filepath.Join(string(filepath.Separator), "tmp", "downloads"),
+			want:      absoluteDirectory,
 		},
 		{
 			name:      "execution at filesystem root",
